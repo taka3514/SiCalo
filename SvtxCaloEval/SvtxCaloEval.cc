@@ -48,7 +48,6 @@ void SvtxCaloEval::next_event(PHCompositeNode* topNode)
 //____________________________________________________________________________..
 bool SvtxCaloEval::isSvtxCaloTruth( SvtxTrack* track,  RawCluster* cluster)
 {
-  // 1. Track → truth particles
   std::set<PHG4Particle*> truth_particles = ReturnTruthParticle(track);
   if (truth_particles.empty()){
     return false;
