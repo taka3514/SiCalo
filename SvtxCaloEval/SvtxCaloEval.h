@@ -54,6 +54,8 @@ class SvtxCaloEval : public SubsysReco
   
   std::set<int> get_Svtx_trkId();
 
+  std::map<int, TrackData> track_map;
+
  private:
 
   std::string _caloname;
@@ -61,8 +63,6 @@ class SvtxCaloEval : public SubsysReco
 
   std::set<int> SvtxCalo_trackId_set;
   std::set<int> Svtx_trackId_set;
-
-  std::map<int, TrackData> track_map;
 
   SvtxEvalStack *svtxeval;
   SvtxTruthEval *svtxtrutheval;
