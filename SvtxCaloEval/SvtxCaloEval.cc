@@ -48,24 +48,31 @@ void SvtxCaloEval::next_event(PHCompositeNode* topNode)
 //____________________________________________________________________________..
 bool SvtxCaloEval::isSvtxCaloTruth( SvtxTrack* track,  RawCluster* cluster)
 {
-  bool isTrue = false;
-  std::set<PHG4Particle*> SvtxP = ReturnTruthParticle(track);
-  if(SvtxP.empty()){
+  // 1. Track → truth particles
+  std::set<PHG4Particle*> truth_particles = ReturnTruthParticle(track);
+  if (truth_particles.empty()){
     return false;
   }
-  std::set<PHG4Particle*> CaloP = ReturnTruthParticle(cluster);
-  if(CaloP.empty()){
+
+  std::set<RawCluster*> truth_clusters;
+
+  for (auto* p : truth_particles){
+    std::set<RawCluster*> clus_from_p = caloeval->all_clusters_from(p);
+
+    truth_clusters.insert(clus_from_p.begin(), clus_from_p.end());
+  }
+  if (truth_clusters.empty()){
     return false;
   }
-  for(auto p : SvtxP){
-    if(CaloP.find(p)!= CaloP.end()){
-	  int id = p->get_track_id(); 
-	  SvtxCalo_trackId_set.insert(id);
-	  AddTrackMap(p);
-	  isTrue = true;
+  if (truth_clusters.find(cluster) != truth_clusters.end()){
+    for (auto* p : truth_particles){
+      int id = p->get_track_id();
+      SvtxCalo_trackId_set.insert(id);
+      AddTrackMap(p);
     }
+    return true;
   }
-  return isTrue;
+  return false;
 }
 
 //____________________________________________________________________________..
@@ -84,13 +91,6 @@ bool SvtxCaloEval::isSvtxTruth( SvtxTrack* track)
   }
   
   return false;
-}
-//____________________________________________________________________________..
-std::set<PHG4Particle*> SvtxCaloEval::ReturnTruthParticle(RawCluster* cluster)
-{
-  std::set<PHG4Particle*> cluster_particles = caloeval->all_truth_primary_particles(cluster);
-
-  return cluster_particles;
 }
 //____________________________________________________________________________..
 std::set<PHG4Particle*> SvtxCaloEval::ReturnTruthParticle(SvtxTrack* track)

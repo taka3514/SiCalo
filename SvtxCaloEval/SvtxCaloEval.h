@@ -71,8 +71,6 @@ class SvtxCaloEval : public SubsysReco
 
   void AddTrackMap(PHG4Particle* p);
 
-  std::set<PHG4Particle*> ReturnTruthParticle(RawCluster* cluster);
-
   std::set<PHG4Particle*> ReturnTruthParticle(SvtxTrack* track);
 };
 
