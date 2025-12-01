@@ -1,0 +1,116 @@
+//____________________________________________________________________________..
+//
+// This is a template for a Fun4All SubsysReco module with all methods from the
+// $OFFLINE_MAIN/include/fun4all/SubsysReco.h baseclass
+// You do not have to implement all of them, you can just remove unused methods
+// here and in SvtxCaloEval.h.
+//
+// SvtxCaloEval(const std::string &name = "SvtxCaloEval")
+// everything is keyed to SvtxCaloEval, duplicate names do work but it makes
+// e.g. finding culprits in logs difficult or getting a pointer to the module
+// from the command line
+//
+// SvtxCaloEval::~SvtxCaloEval()
+// this is called when the Fun4AllServer is deleted at the end of running. Be
+// mindful what you delete - you do loose ownership of object you put on the node tree
+//
+// int SvtxCaloEval::Init(PHCompositeNode *topNode)
+// This method is called when the module is registered with the Fun4AllServer. You
+// can create historgrams here or put objects on the node tree but be aware that
+// modules which haven't been registered yet did not put antyhing on the node tree
+//
+// int SvtxCaloEval::InitRun(PHCompositeNode *topNode)
+// This method is called when the first event is read (or generated). At
+// this point the run number is known (which is mainly interesting for raw data
+// processing). Also all objects are on the node tree in case your module's action
+// depends on what else is around. Last chance to put nodes under the DST Node
+// We mix events during readback if branches are added after the first event
+//
+// int SvtxCaloEval::process_event(PHCompositeNode *topNode)
+// called for every event. Return codes trigger actions, you find them in
+// $OFFLINE_MAIN/include/fun4all/Fun4AllReturnCodes.h
+//   everything is good:
+//     return Fun4AllReturnCodes::EVENT_OK
+//   abort event reconstruction, clear everything and process next event:
+//     return Fun4AllReturnCodes::ABORT_EVENT; 
+//   proceed but do not save this event in output (needs output manager setting):
+//     return Fun4AllReturnCodes::DISCARD_EVENT; 
+//   abort processing:
+//     return Fun4AllReturnCodes::ABORT_RUN
+// all other integers will lead to an error and abort of processing
+//
+// int SvtxCaloEval::ResetEvent(PHCompositeNode *topNode)
+// If you have internal data structures (arrays, stl containers) which needs clearing
+// after each event, this is the place to do that. The nodes under the DST node are cleared
+// by the framework
+//
+// int SvtxCaloEval::EndRun(const int runnumber)
+// This method is called at the end of a run when an event from a new run is
+// encountered. Useful when analyzing multiple runs (raw data). Also called at
+// the end of processing (before the End() method)
+//
+// int SvtxCaloEval::End(PHCompositeNode *topNode)
+// This is called at the end of processing. It needs to be called by the macro
+// by Fun4AllServer::End(), so do not forget this in your macro
+//
+// int SvtxCaloEval::Reset(PHCompositeNode *topNode)
+// not really used - it is called before the dtor is called
+//
+// void SvtxCaloEval::Print(const std::string &what) const
+// Called from the command line - useful to print information when you need it
+//
+//____________________________________________________________________________..
+
+#include "SvtxCaloEval.h"
+
+#include <fun4all/Fun4AllReturnCodes.h>
+
+#include <phool/PHCompositeNode.h>
+
+//____________________________________________________________________________..
+SvtxCaloEval::SvtxCaloEval(PHCompositeNode *topNode, const std::string& caloName):
+  _caloname(caloName)
+{
+  std::cout << "SvtxCaloEval::SvtxCaloEval(const std::string &name) Calling ctor" << std::endl;
+  svtxeval = new SvtxTruthEval(topNode);
+  caloeval = new CaloRawClusterEval(topNode, caloName);
+
+  svtxeval->set_strict(false);
+  caloeval->set_strict(false);
+
+}
+
+//____________________________________________________________________________..
+SvtxCaloEval::~SvtxCaloEval()
+{
+  std::cout << "SvtxCaloEval::~SvtxCaloEval() Calling dtor" << std::endl;
+}
+
+void MyCombinedTruthEval::next_event(PHCompositeNode* topNode)
+{
+  svtxeval->next_event(topNode);
+  caloeval->next_event(topNode);
+}
+
+//____________________________________________________________________________..
+bool SvtxCaloEval::isSvtxCaloTruth(const SvtxTrack* track, const RawCluster* cluster)
+{
+  if (!track || !cluster) return false;
+
+  // Track から truth particle を取得
+  PHG4Particle* track_particle = svtxeval->get_particle(track);
+  if (!track_particle) return false;
+  // Cluster に寄与している全ての truth particle を取得
+  std::set<PHG4Particle*> cluster_particles = caloeval->all_truth_primary_particles(cluster);
+
+  // Track particle が cluster に含まれるかチェック
+  return cluster_particles.find(track_particle) != cluster_particles.end();
+}
+
+//____________________________________________________________________________..
+bool SvtxCaloEval::isSvtxTruth(const SvtxTrack* track)
+{
+
+}
+
+//____________________________________________________________________________..
